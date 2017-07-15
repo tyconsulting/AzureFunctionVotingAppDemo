@@ -67,6 +67,9 @@ All of these modules can be found from the PowerShell gallery ([https://www.Powe
 You will need to specify a credential for a user that has admin privilege for Azure AD tenant and Azure subscription.
 
 ### Executing Deploy-VotingApp.ps1 Script
+**Before running the script, make sure you update variables from line 283 to 295 according to your environments**
+![](images/ChangeVariables.png)
+
 Syntax:
 ``` PowerShell
 .\Deploy-VotingApp.ps1 $(Get-Credential)

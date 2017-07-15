@@ -280,7 +280,7 @@ $SQLReadOnlyUserPassword = New-Password -Length 12 -LowerCase -UpperCase -Number
 $arrFilesToRemove = New-Object System.Collections.ArrayList
 
 #Change the following variables to suit your environment
-$AzureSubscriptionId = '28ff2389-2cd4-448d-bbf2-e6c5b15cc395'
+$AzureSubscriptionId = '1ffcaf1b-912e-4dd7-8635-fb5fc54d4aff'
 $ResourceGroupName = 'VotingAppDemo'
 $ResourceGroupLocation = 'East US'
 $StorageAccountType= 'Standard_GRS'

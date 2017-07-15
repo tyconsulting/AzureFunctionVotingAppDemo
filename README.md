@@ -135,6 +135,6 @@ Once the report is loaded, you can publish it to Power BI Online.
 ### Sample Report
 > **Note:** This report uses direct query, however, cache refresh is scheduled to run every 15 minutes. you may need to refresh the page after voting in order to see the change reflected on this report.
 
-<dl>
+<div>
 <iframe width="800" height="600" src="https://app.powerbi.com/view?r=eyJrIjoiZDJhNzZhMGYtNjhiOS00ZDYwLTg0OWMtNWJlNTJhMThhZGJmIiwidCI6Ijc4Mzk2MjQwLTY0OWEtNGJmNC05NDE1LWQ3NDAwMWIyNGQwNyIsImMiOjEwfQ%3D%3D" frameborder="0" allowFullScreen="true"></iframe>
-</dl>
+</div>

@@ -1,0 +1,507 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "AADApplicationId": {
+      "type": "string",
+      "minLength": 36,
+      "maxLength": 36,
+      "metadata": {
+        "description": "The Application ID of the Framework Azure AD application."
+      }
+    },
+    "AADApplicationSPObjectId": {
+      "type": "string",
+      "minLength": 36,
+      "maxLength": 36,
+      "metadata": {
+        "description": "The Object ID of the Azure AD application Service Principal."
+      }
+    },
+    "MSFTAzureWebsitesRPSPObjectId": {
+      "type": "string",
+      "minLength": 36,
+      "maxLength": 36,
+      "metadata": {
+        "description": "The object ID of the Azure AD Microsoft.Azure.Websites application."
+      }
+    },
+    "Storage-AccountType": {
+      "type": "string",
+      "defaultValue": "Standard_ZRS",
+      "allowedValues": [
+        "Standard_LRS",
+        "Standard_GRS",
+        "Standard_RAGRS"
+      ]
+    },
+    "SQL-ServerName": {
+      "type": "string",
+      "minLength": 6
+    },
+    "SQL-DBName": {
+      "type": "string",
+      "minLength": 3
+    },
+    "SQL-AdminLogin": {
+      "type": "string",
+      "minLength": 8
+    },
+    "SQL-AdminLoginPassword": {
+      "type": "securestring"
+    },
+    "SQL-ReadOnlyLogin": {
+      "type": "string",
+      "minLength": 8
+    },
+    "SQL-ReadOnlyLoginPassword": {
+      "type": "securestring"
+    },
+    "SQL-DBEdition": {
+      "type": "string",
+      "defaultValue": "Standard",
+      "allowedValues": [
+        "Basic",
+        "Standard",
+        "Premium"
+      ]
+    },
+    "SQL-DBPricingTier": {
+      "type": "string",
+      "defaultValue": "S0",
+      "allowedValues": [
+        "Basic",
+        "S0",
+        "S1",
+        "S2",
+        "P1",
+        "P2",
+        "P3"
+      ],
+      "metadata": {
+        "description": "Describes the performance level for Edition"
+      }
+    },
+    "Function-Name": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the function app."
+      }
+    },
+    "Function-FunctionAppsRegion": {
+      "type": "string",
+      "defaultValue": "East US 2",
+      "allowedValues": [
+        "Australia East",
+        "Australia Southeast",
+        "Brazil South",
+        "Canada Central",
+        "Central US",
+        "East Asia",
+        "East US",
+        "East US 2",
+        "Japan East",
+        "Japan West",
+        "North Central US",
+        "North Europe",
+        "South Central US",
+        "South India",
+        "Southeast Asia",
+        "UK South",
+        "West Europe",
+        "West US",
+        "West US 2"
+      ]
+    },
+    "KeyVault-Name": {
+      "type": "string",
+      "metadata": {
+        "description": "The key vault name."
+      }
+    },
+    "Cert-AADAppCertFileBase64Content": {
+      "type": "string",
+      "metadata": {
+        "description": "The Base64 content of the  Framework Azure AD application certificate file."
+      }
+    },
+    "Cert-AADAppThumbPrint": {
+      "type": "string",
+      "minLength": 40,
+      "maxLength": 40,
+      "metadata": {
+        "description": "The certificate thumbprint of the Azure AD application Service Principle created for the voting app."
+      }
+    }
+  },
+  "variables": {
+    "KeyVault-AADAppCertName": "aadappcert",
+    "SQL-FQDN": "[concat(parameters('SQL-ServerName'), '.database.windows.net')]",
+    "SQL-DBsCollation": "SQL_Latin1_General_CP1_CI_AS",
+    "Storage-AF": "[concat('af', uniqueString(resourceGroup().id))]",
+    "Storage-AFAccountId": "[concat(resourceGroup().id,'/providers/','Microsoft.Storage/storageAccounts/', variables('Storage-AF'))]",
+    "AF-HostingPlanName": "[parameters('Function-Name')]"
+  },
+  "resources": [
+    {
+      "name": "[variables('Storage-AF')]",
+      "type": "Microsoft.Storage/storageAccounts",
+      "sku": {
+        "name": "[parameters('Storage-AccountType')]"
+      },
+      "kind": "Storage",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2016-12-01",
+      "properties": {
+        "encryption": {
+          "services": {
+            "blob": {
+              "enabled": false
+            },
+            "file": {
+              "enabled": false
+            }
+          },
+          "keySource": "Microsoft.Storage"
+        }
+      },
+      "dependsOn": [],
+      "tags": {
+        "Application": "VotingAppDemo"
+      }
+    },
+    {
+      "name": "[parameters('KeyVault-Name')]",
+      "type": "Microsoft.KeyVault/vaults",
+      "apiVersion": "2015-06-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('Storage-AF'))]",
+        "[resourceId('Microsoft.Sql/servers', parameters('SQL-ServerName'))]"
+      ],
+      "location": "[resourceGroup().location]",
+      "tags": {
+        "Application": "VotingAppDemo"
+      },
+      "properties": {
+        "tenantId": "[subscription().tenantId]",
+        "sku": {
+          "family": "A",
+          "name": "standard"
+        },
+        "accessPolicies": [
+          {
+            "tenantId": "[subscription().tenantId]",
+            "objectId": "[parameters('AADApplicationSPObjectId')]",
+            "permissions": {
+              "keys": [
+                "all"
+              ],
+              "secrets": [
+                "all"
+              ],
+              "certificates": [
+                "All"
+              ]
+            }
+          },
+          {
+            "tenantId": "[subscription().tenantId]",
+            "objectId": "[parameters('MSFTAzureWebsitesRPSPObjectId')]",
+            "permissions": {
+              "keys": [
+                "all"
+              ],
+              "secrets": [
+                "all"
+              ],
+              "certificates": [
+                "All"
+              ]
+            }
+          }
+        ],
+        "enabledForDeployment": true,
+        "enabledForDiskEncryption": true,
+        "enabledForTemplateDeployment": true
+      },
+      "resources": [
+        {
+          "type": "secrets",
+          "name": "VotingSQLDB",
+          "apiVersion": "2015-06-01",
+          "tags": {
+            "Application": "VotingAppDemo"
+          },
+          "properties": {
+            "contentType": "text/plain",
+            "value": "[parameters('SQL-DBName')]"
+          },
+          "dependsOn": [
+            "[resourceId('Microsoft.KeyVault/vaults', parameters('KeyVault-Name'))]"
+          ]
+        },
+        {
+          "type": "secrets",
+          "name": "SQLServerFQDN",
+          "apiVersion": "2015-06-01",
+          "tags": {
+            "Application": "VotingAppDemo"
+          },
+          "properties": {
+            "contentType": "text/plain",
+            "value": "[variables('SQL-FQDN')]"
+          },
+          "dependsOn": [
+            "[resourceId('Microsoft.KeyVault/vaults', parameters('KeyVault-Name'))]"
+          ]
+        },
+        {
+          "type": "secrets",
+          "name": "SQLAdminUserName",
+          "apiVersion": "2015-06-01",
+          "tags": {
+            "Application": "VotingAppDemo"
+          },
+          "properties": {
+            "contentType": "text/plain",
+            "value": "[parameters('SQL-AdminLogin')]"
+          },
+          "dependsOn": [
+            "[resourceId('Microsoft.KeyVault/vaults', parameters('KeyVault-Name'))]"
+          ]
+        },
+        {
+          "type": "secrets",
+          "name": "SQLAdminPassword",
+          "apiVersion": "2015-06-01",
+          "tags": {
+            "Application": "VotingAppDemo"
+          },
+          "properties": {
+            "contentType": "text/plain",
+            "value": "[parameters('SQL-AdminLoginPassword')]"
+          },
+          "dependsOn": [
+            "[resourceId('Microsoft.KeyVault/vaults', parameters('KeyVault-Name'))]"
+          ]
+        },
+        {
+          "type": "secrets",
+          "name": "SQLReadOnlyUserName",
+          "apiVersion": "2015-06-01",
+          "tags": {
+            "Application": "VotingAppDemo"
+          },
+          "properties": {
+            "contentType": "text/plain",
+            "value": "[parameters('SQL-ReadOnlyLogin')]"
+          },
+          "dependsOn": [
+            "[resourceId('Microsoft.KeyVault/vaults', parameters('KeyVault-Name'))]"
+          ]
+        },
+        {
+          "type": "secrets",
+          "name": "SQLReadOnlyUserPassword",
+          "apiVersion": "2015-06-01",
+          "tags": {
+            "Application": "VotingAppDemo"
+          },
+          "properties": {
+            "contentType": "text/plain",
+            "value": "[parameters('SQL-ReadOnlyLoginPassword')]"
+          },
+          "dependsOn": [
+            "[resourceId('Microsoft.KeyVault/vaults', parameters('KeyVault-Name'))]"
+          ]
+        },
+        {
+          "type": "secrets",
+          "name": "AADAppServicePrincipalId",
+          "apiVersion": "2015-06-01",
+          "tags": {
+            "Application": "VotingAppDemo"
+          },
+          "properties": {
+            "contentType": "text/plain",
+            "value": "[parameters('AADApplicationSPObjectId')]"
+          },
+          "dependsOn": [
+            "[resourceId('Microsoft.KeyVault/vaults', parameters('KeyVault-Name'))]"
+          ]
+        },
+        {
+          "type": "secrets",
+          "name": "[variables('KeyVault-AADAppCertName')]",
+          "apiVersion": "2015-06-01",
+          "tags": {
+            "Application": "VotingAppDemo"
+          },
+          "properties": {
+            "contentType": "application/x-pkcs12",
+            "value": "[parameters('Cert-AADAppCertFileBase64Content')]"
+          },
+          "dependsOn": [
+            "[resourceId('Microsoft.KeyVault/vaults', parameters('KeyVault-Name'))]"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "[parameters('SQL-ServerName')]",
+      "type": "Microsoft.Sql/servers",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2014-04-01-preview",
+      "dependsOn": [],
+      "tags": {
+        "Application": "VotingAppDemo"
+      },
+      "properties": {
+        "administratorLogin": "[parameters('SQL-AdminLogin')]",
+        "administratorLoginPassword": "[parameters('SQL-AdminLoginPassword')]"
+      },
+      "resources": [
+        {
+          "name": "AllowAllIps",
+          "type": "firewallrules",
+          "location": "[resourceGroup().location]",
+          "apiVersion": "2014-04-01-preview",
+          "dependsOn": [
+            "[resourceId('Microsoft.Sql/servers', parameters('SQL-ServerName'))]"
+          ],
+          "properties": {
+            "startIpAddress": "0.0.0.0",
+            "endIpAddress": "255.255.255.255"
+          }
+        },
+        {
+          "name": "AllowAllWindowsAzureIps",
+          "type": "firewallrules",
+          "location": "[resourceGroup().location]",
+          "apiVersion": "2014-04-01-preview",
+          "dependsOn": [
+            "[resourceId('Microsoft.Sql/servers', parameters('SQL-ServerName'))]"
+          ],
+          "properties": {
+            "startIpAddress": "0.0.0.0",
+            "endIpAddress": "0.0.0.0"
+          }
+        },
+        {
+          "name": "[parameters('SQL-DBName')]",
+          "type": "databases",
+          "location": "[resourceGroup().location]",
+          "apiVersion": "2014-04-01-preview",
+          "dependsOn": [
+            "[resourceId('Microsoft.Sql/servers', parameters('SQL-ServerName'))]"
+          ],
+          "tags": {
+            "Application": "VotingAppDemo"
+          },
+          "properties": {
+            "collation": "[variables('SQL-DBsCollation')]",
+            "edition": "[parameters('SQL-DBEdition')]",
+            "maxSizeBytes": "1073741824",
+            "requestedServiceObjectiveName": "[parameters('SQL-DBPricingTier')]"
+          }
+        }
+      ]
+    },
+    {
+      "type": "Microsoft.Web/serverfarms",
+      "apiVersion": "2015-04-01",
+      "tags": {
+        "Application": "VotingAppDemo"
+      },
+      "name": "[variables('AF-HostingPlanName')]",
+      "location": "[parameters('Function-FunctionAppsRegion')]",
+      "properties": {
+        "name": "[variables('AF-HostingPlanName')]",
+        "computeMode": "Dynamic",
+        "sku": "Dynamic"
+      }
+    },
+    {
+      "apiVersion": "2015-08-01",
+      "type": "Microsoft.Web/sites",
+      "name": "[parameters('Function-Name')]",
+      "tags": {
+        "Application": "VotingAppDemo"
+      },
+      "location": "[parameters('Function-FunctionAppsRegion')]",
+      "kind": "functionapp",
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms', variables('AF-HostingPlanName'))]",
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('Storage-AF'))]"
+      ],
+      "properties": {
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('AF-HostingPlanName'))]",
+        "siteConfig": {
+          "use32BitWorkerProcess": false,
+          "appSettings": [
+            {
+              "name": "AzureWebJobsDashboard",
+              "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('Storage-AF'), ';AccountKey=', listKeys(variables('Storage-AFAccountId'),'2015-05-01-preview').key1)]"
+            },
+            {
+              "name": "AzureWebJobsStorage",
+              "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('Storage-AF'), ';AccountKey=', listKeys(variables('Storage-AFAccountId'),'2015-05-01-preview').key1)]"
+            },
+            {
+              "name": "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING",
+              "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('Storage-AF'), ';AccountKey=', listKeys(variables('Storage-AFAccountId'),'2015-05-01-preview').key1)]"
+            },
+            {
+              "name": "WEBSITE_CONTENTSHARE",
+              "value": "[toLower(parameters('Function-Name'))]"
+            },
+            {
+              "name": "FUNCTIONS_EXTENSION_VERSION",
+              "value": "~1"
+            },
+            {
+              "name": "WEBSITE_NODE_DEFAULT_VERSION",
+              "value": "6.5.0"
+            },
+            {
+              "name": "WEBSITE_LOAD_CERTIFICATES",
+              "value": "*"
+            },
+            {
+              "name": "KeyVaultName",
+              "value": "[parameters('KeyVault-Name')]"
+            },
+            {
+              "name": "KVAADAppId",
+              "value": "[parameters('AADApplicationId')]"
+            },
+            {
+              "name": "KVCertThumbPrint",
+              "value": "[parameters('Cert-AADAppThumbPrint')]"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "AADAppCred",
+      "type": "Microsoft.Web/certificates",
+      "apiVersion": "2016-03-01",
+      "tags": {
+        "Application": "VotingAppDemo"
+      },
+      "location": "[parameters('Function-FunctionAppsRegion')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms', variables('AF-HostingPlanName'))]",
+        "[resourceId('Microsoft.KeyVault/vaults', parameters('KeyVault-Name'))]",
+        "[concat('Microsoft.KeyVault/vaults/', parameters('KeyVault-Name'), '/secrets/', variables('KeyVault-AADAppCertName'))]"
+      ],
+      "properties": {
+        "keyVaultId": "[resourceId('Microsoft.KeyVault/vaults', parameters('KeyVault-Name'))]",
+        "keyVaultSecretName": "[variables('KeyVault-AADAppCertName')]",
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('AF-HostingPlanName'))]"
+      }
+    }
+  ],
+  "outputs": { }
+}

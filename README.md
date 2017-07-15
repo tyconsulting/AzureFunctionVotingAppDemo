@@ -133,6 +133,10 @@ Once the report is loaded, you can publish it to Power BI Online.
 ![](images/PublishPowerBI.png)
 
 ### Sample Report
+#### Sample Report Screenshot
+![](images/SampleReport.png)
+
+#### Demo Live Report
 > **Note:** This report uses direct query, however, cache refresh is scheduled to run every 15 minutes. you may need to wait up to 15 minutes after voting in order to see the change reflected on this report.
 
 [**Open Report**](https://app.powerbi.com/view?r=eyJrIjoiZDJhNzZhMGYtNjhiOS00ZDYwLTg0OWMtNWJlNTJhMThhZGJmIiwidCI6Ijc4Mzk2MjQwLTY0OWEtNGJmNC05NDE1LWQ3NDAwMWIyNGQwNyIsImMiOjEwfQ%3D%3D)

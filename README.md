@@ -208,7 +208,12 @@ Generate QR code for different votes
   Out-BarcodeImage -Content $LoveItURL -BarcodeFormat QR_CODE 'C:\LoveIt.png' -ImageFormat png -Width 500 -Height 500
     ~~~
 ### Power BI Report
-Create Power BI report using your favourite visuals. Use the SQL Read-Only user name and password to connect to SQL DB.
+Create Power BI report using your favourite visuals. Use the SQL Read-Only user name and password to connect to SQL DB. You can use the following SQL Query in Power BI report:
+~~~SQL
+Select v.Id as VoteId, v.RatingId, r.RatingTitle, v.ClientIP, v.SubmissionDate from AzureFunctionDemo.Vote v
+JOIN AzureFunctionDemo.Rating r on v.RatingId = r.Id
+~~~
+
 
 ## Casting Votes
 To cast votes, end users can either browse to various URLs in the browser or scan QR codes using mobile devices.

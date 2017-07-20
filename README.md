@@ -282,7 +282,7 @@ The author of this app has also managed to create several Microsoft Flows to tri
 2. Share the flows with other users in your organization
 
 ## Conclusion
-In this sample app, we have demonstrated how to securely integrate Azure Functions with other Azure services such as Azure SQL DB using Key Vault. We have also demonstrated how to trigger the function from mobile devices using QR codes.
+In this sample app, we have demonstrated how to securely integrate Azure Functions with other Azure services such as Azure SQL DB using Key Vault. We have also demonstrated how to trigger the function from mobile devices using QR codes and MS Flow.
 
 ## Credit
 In this project, several components come from other community projects:

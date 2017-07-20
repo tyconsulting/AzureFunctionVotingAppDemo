@@ -162,8 +162,8 @@ INSERT AzureFunctionDemo.Rating (RatingScore, RatingTitle) VALUES
 ### Azure Function App
 1. Create an Azure function app
 2. Create a C# HTTP triggered function
-    * run.csx  - get source code [here](function\Vote\run.csx)
-    * Create keyvault.csx - get source code [here](function\Vote\keyvaultclient.csx)
+    * run.csx  - get source code [here](https://github.com/tyconsulting/AzureFunctionVotingAppDemo/blob/master/function/Vote/run.csx)
+    * Create keyvault.csx - get source code [here](https://github.com/tyconsulting/AzureFunctionVotingAppDemo/blob/master/function/Vote/keyvaultclient.csx)
 3. Modify project.json as shown below:
     ~~~json
     {

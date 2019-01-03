@@ -388,13 +388,13 @@ Try {
 #region deploy Azure components
 #Retrieve MSFT Azure AD app Microsoft.Azure.Websites
 $ConnectAzureAD = connect-azuread -Credential $AdminCred
-$AzureWebsitesSP = Get-AzureADServicePrincipal -SearchString 'Microsoft.Azure.Websites' | Where-Object {$_.DisplayName -eq 'Microsoft.Azure.Websites'}
+$AzureWebsitesSP = Get-AzureADServicePrincipal -SearchString 'Microsoft Azure App Service' | Where-Object {$_.DisplayName -eq 'Microsoft Azure App Service'}
 If ($AzureWebsitesSP -ne $null)
 {
-  Write-Output "Found Azure AD app 'Microsoft.Azure.Websites'."
+  Write-Output "Found Azure AD app 'Microsoft Azure App Service'."
   $AzureWebSitesObjectId = $AzureWebsitesSP.ObjectId
 } else {
-  Throw "Azure AD application 'Microsoft.Azure.Websites' not found."
+  Throw "Azure AD application 'Microsoft Azure App Service' not found."
   Exit -1
 }
 
@@ -426,7 +426,7 @@ Try {
   Write-Output '', "Self signed certificated created. It is temporarily located at '$CertPath'. Creating key credential for the AAD application now."
   $PFXCert = New-Object -TypeName System.Security.Cryptography.X509Certificates.X509Certificate2 -ArgumentList @($CertPath, $CertPlainPassword)
   $KeyValue = [System.Convert]::ToBase64String($PFXCert.GetRawCertData())
-  $KeyCredential = New-Object  -TypeName Microsoft.Azure.Commands.Resources.Models.ActiveDirectory.PSADKeyCredential
+  $KeyCredential = New-Object -TypeName Microsoft.Azure.Graph.RBAC.Version1_6.ActiveDirectory.PSADKeyCredential
   $KeyCredential.StartDate = $PFXCert.NotBefore
   $KeyCredential.EndDate = $PFXCert.NotAfter
   $KeyCredential.KeyId = $KeyId
@@ -485,9 +485,9 @@ $parms = @{
   'SQL-ServerName' = $SQLServerName.ToLower()
   'SQL-DBName' = $SQLDBName
   'SQL-AdminLogin' = $SQLAdminUserName
-  'SQL-AdminLoginPassword' = (ConvertTo-SecureString $SQLAdminUserPassword -AsPlainText -Force)
+  'SQL-AdminLoginPassword' = $SQLAdminUserPassword
   'SQL-ReadOnlyLogin' = $SQLReadOnlyUserName
-  'SQL-ReadOnlyLoginPassword' = (ConvertTo-SecureString $SQLReadOnlyUserPassword -AsPlainText -Force)
+  'SQL-ReadOnlyLoginPassword' = $SQLReadOnlyUserPassword
   'SQL-DBEdition' = $SQLDBEdition
   'SQL-DBPricingTier' = $SQLDBPricingTier
   'Function-Name' = $FunctionAppName
@@ -499,7 +499,7 @@ $parms = @{
 
 #Test ARM template
 Write-Output '', "Validating ARM template"
-$ARMTemplateValidationResult = Test-AzureRmResourceGroupDeployment -TemplateFile $ARMTemplateFilePath -ResourceGroupName $ResourceGroupName @parms
+$ARMTemplateValidationResult = Test-AzureRmResourceGroupDeployment -TemplateFile $ARMTemplateFilePath -ResourceGroupName $ResourceGroupName -TemplateParameterObject $parms
 $ValidationErrors = Format-ValidationOutput $ARMTemplateValidationResult
 if ($ValidationErrors) {
   Write-Output 'Validation returned the following errors:', @($ValidationErrors), '', "Template '$ARMTemplateFilePath' is invalid."
@@ -509,7 +509,7 @@ else {
   Write-Output '', "Deploying Voting App Demo ARM template now. This will take a while..."
   $ARMDeploymentStartTime = Get-date
   $ARMDeploymentName = 'VotingAppDemo' + '-' + ((Get-Date).ToUniversalTime()).ToString('MMdd-HHmm')
-  $ARMTemplateDeploymentResult = New-AzureRmResourceGroupDeployment -Name $ARMDeploymentName -ResourceGroupName $ResourceGroupName -TemplateFile $ARMTemplateFilePath @parms -Force -ErrorVariable DeployError
+  $ARMTemplateDeploymentResult = New-AzureRmResourceGroupDeployment -Name $ARMDeploymentName -ResourceGroupName $ResourceGroupName -TemplateFile $ARMTemplateFilePath -TemplateParameterObject $parms -Force -ErrorVariable DeployError
   $ARMDeplymentFinishedTime = Get-date
   $ARMTemplateDeploymentTimeConsumed = $ARMDeplymentFinishedTime.Subtract($ARMDeploymentStartTime)
   Write-Output "Total time for ARM template deployment: $($ARMTemplateDeploymentTimeConsumed.Hours) Hours $($ARMTemplateDeploymentTimeConsumed.Minutes) minutes and $($ARMTemplateDeploymentTimeConsumed.Seconds) seconds."
